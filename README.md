@@ -1,6 +1,6 @@
-#Project 4 - Item Catalog
+# Project 4 - Item Catalog
 
-#Introduction
+# Introduction
  
 The porpuse of this project is to implement a webpage with Flask and CRUD functionalities 
 with sqlalchemy to maintain a database. 
@@ -8,7 +8,7 @@ It provides user authentication with Google account, user registration system an
 JSON API for all items and categories. All the users can see the categories and items but 
 only registered users can modify them.
 
-#Setup
+# Setup
 
 Clone this repository.
 
@@ -35,7 +35,7 @@ If you do not have the necessary programs, you will need to install the followin
 - Vagrant
 - Virtual Box
 
-#Running
+# Running
 
 Launch Vagrant by running vagrant up from the command line, then log with
 vagrant ssh.
