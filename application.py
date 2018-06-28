@@ -15,6 +15,7 @@ import json
 import httplib2
 from flask import make_response
 import requests
+from random import randint
 
 app = Flask(__name__, template_folder='static')
 
@@ -51,8 +52,8 @@ def gconnect():
     # Validate state token
     print("validating state token")
     # there is no state value here
-    print(request.args.get('state'))
-    print(login_session['state'])
+    print("request.args.get('state')", request.args.get('state'))
+    print("login_session['state']", login_session['state'])
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
@@ -131,11 +132,15 @@ def gconnect():
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
+    print("TYPE AT CREATING: ", type(login_session['email']))
 
     # see if user exists, if it doesn't make a new one
     user_id = getUserID(login_session['email'])
+    print("TYPE: ", type(login_session['email']))
     if not user_id:
+        print("creating a new user....")
         user_id = createUser(login_session)
+    print("we already know this user!")
     login_session['user_id'] = user_id
 
     output = ''
@@ -297,8 +302,10 @@ for logged-in users
 def showOneItem(category_id, item_id):
     session = create_session()
     category = session.query(Category).filter_by(id=category_id).one()
+    print("CATEGORY: ", category)
     oneItem = session.query(Item).filter_by(id=item_id,
                                             category_id=category.id).one()
+    print("ITEM: ", oneItem)
     creator = getUserInfo(category.user_id)
     # if user not logged in or the user is not owner of the category,
     # show the public template
@@ -472,13 +479,32 @@ def deleteItem(category_id, item_id):
 # create user function to create new user
 def createUser(login_session):
     session = create_session()
-    user = User(name=login_session['username'],
+    # todo delete id randint
+    user_id = randint(0, 100)
+    email_filter = login_session['email']
+    user = User(id=user_id,
+                name=login_session['username'],
                 picture=login_session['picture'],
                 email=login_session['email'])
     session.add(user)
     session.commit()
-    user = session.query(User).filter_by(email=login_session['email'].one())
-    return user.id
+    #print("SESSION USERNAME: ", login_session['username'])
+    #print("SESSION EMAIL:",  login_session['email'])
+    #print("USER:", user)
+    # todo: change back to id
+    users = session.query(User).all()
+    print("USERS: ", users)
+    #category = session.query(Category).filter_by(id=category_id).one()
+    # eredeti: user = session.query(User).filter_by(email=login_session['email)
+    for user in users:
+        print("USER: ", user)
+        if user.email == login_session['email']:
+            print("QUERIED USER: ", user)
+            print("QUERIED USER email: ", user.email)
+    print("email:", user.email)
+    # todo: change back to id
+    print("we created a new user!")
+    return user.email
 
 
 # get the user object
