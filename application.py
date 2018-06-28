@@ -479,32 +479,23 @@ def deleteItem(category_id, item_id):
 # create user function to create new user
 def createUser(login_session):
     session = create_session()
-    # todo delete id randint
-    user_id = randint(0, 100)
-    email_filter = login_session['email']
-    user = User(id=user_id,
-                name=login_session['username'],
+    user = User(name=login_session['username'],
                 picture=login_session['picture'],
                 email=login_session['email'])
     session.add(user)
     session.commit()
-    #print("SESSION USERNAME: ", login_session['username'])
-    #print("SESSION EMAIL:",  login_session['email'])
-    #print("USER:", user)
     # todo: change back to id
     users = session.query(User).all()
     print("USERS: ", users)
-    #category = session.query(Category).filter_by(id=category_id).one()
-    # eredeti: user = session.query(User).filter_by(email=login_session['email)
     for user in users:
         print("USER: ", user)
-        if user.email == login_session['email']:
+        if user.id == login_session['id']:
             print("QUERIED USER: ", user)
-            print("QUERIED USER email: ", user.email)
-    print("email:", user.email)
+            print("QUERIED USER email: ", user.id)
+    print("email:", user.id)
     # todo: change back to id
     print("we created a new user!")
-    return user.email
+    return user.id
 
 
 # get the user object
