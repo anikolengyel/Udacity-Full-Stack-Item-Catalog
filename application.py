@@ -1,3 +1,12 @@
+'''
+#
+# Run the application
+# implement the CRUD functionalities
+# implement Google Oauh login
+#
+'''
+
+
 from flask import Flask, render_template, request
 from flask import redirect, url_for, flash, jsonify
 from database_setup import Category, Item, Base, User
@@ -15,9 +24,9 @@ import json
 import httplib2
 from flask import make_response
 import requests
+import os
 from random import randint
 
-app = Flask(__name__, template_folder='static')
 
 # get the client id
 CLIENT_ID = json.loads(
@@ -35,7 +44,7 @@ def create_session():
 
 
 # creating a flask app
-app = Flask(__name__, template_folder='static')
+app = Flask(__name__)
 
 
 '''
@@ -273,7 +282,7 @@ def categoryItemJson(category_id):
 '''
 CRUD FUNCTIONALITIES
 
-show all the category names and items, return 
+show all the category names and items, return
 two different html templates based on user status
 '''
 
@@ -424,7 +433,7 @@ def newCategory():
 '''
 create new item based on category (category_id parameter required)
 if th user is not authorized, send an alert message and stop the process
-if the user is authorized, 
+if the user is authorized,
 '''
 
 

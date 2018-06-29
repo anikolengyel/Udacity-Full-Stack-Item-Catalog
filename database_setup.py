@@ -1,3 +1,12 @@
+'''
+#
+# Create the database structure
+# Create foreign and primary keys
+# Create helper functions to serialize the data
+# Create database engine
+#
+'''
+
 
 from sqlalchemy import Column, ForeignKey, Integer, String
 
