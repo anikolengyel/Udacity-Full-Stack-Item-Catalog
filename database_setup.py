@@ -17,8 +17,8 @@ class User(Base):
 
     # creating id as primary key
     id = Column(Integer, primary_key=True)
-    name = Column(String(250), nullable = False)
-    email = Column(String(250), nullable = False)
+    name = Column(String(250), nullable=False)
+    email = Column(String(250), nullable=False)
     picture = Column(String(250))
 
     # creating a serialize function to loop thourg the user info
@@ -32,13 +32,14 @@ class User(Base):
             'picture': self.picture
         }
 
+
 # creating a category object inherited from the class base
 class Category(Base):
     __tablename__ = 'category'
 
     # creating id as primary key
     id = Column(Integer, primary_key=True)
-    name = Column(String(80), nullable = False)
+    name = Column(String(80), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
 
@@ -50,13 +51,14 @@ class Category(Base):
             'name': self.name,
         }
 
+
 class Item(Base):
     # creating an item object
     __tablename__ = 'items'
 
     # using id as the primary key
     id = Column(Integer, primary_key=True)
-    name = Column(String(80), nullable = False)
+    name = Column(String(80), nullable=False)
     description = Column(String(250))
     price = Column(String(8))
     # creating a foreign key to the category, pointing to category.id
@@ -66,15 +68,16 @@ class Item(Base):
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
 
-
     @property
     def serialize(self):
 
         return {
             'id': self.id,
             'name': self.name,
-            'desctiption' : self.description,
-            'price': self.price
+            'desctiption': self.description,
+            'price': self.price,
+            'category_id': self.category_id,
+            'user_id': self.user_id
         }
 
 # creating engine on items_catalog.db
@@ -84,8 +87,3 @@ engine = create_engine('sqlite:///items_catalog.db')
 Base.metadata.create_all(engine)
 
 print('We created the database structure!')
-
-
-
-
-

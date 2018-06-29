@@ -37,12 +37,16 @@ def create_session():
 # creating a flask app
 app = Flask(__name__, template_folder='static')
 
-# Login - Create anti-forgery state token
-@app.route('/login')
-def showLogin():
+def generateState():
     state = ''.join(
         random.choice(string.ascii_uppercase + string.digits) for x in range(32))
     login_session['state'] = state
+    return state
+
+# Login - Create anti-forgery state token
+@app.route('/login')
+def showLogin():
+    state = generateState()
     # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
@@ -129,19 +133,17 @@ def gconnect():
 
     data = answer.json()
 
+
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
-    print("TYPE AT CREATING: ", type(login_session['email']))
 
     # see if user exists, if it doesn't make a new one
     user_id = getUserID(login_session['email'])
-    print("TYPE: ", type(login_session['email']))
     if not user_id:
-        print("creating a new user....")
         user_id = createUser(login_session)
-    print("we already know this user!")
     login_session['user_id'] = user_id
+    print("The user is already a member.")
 
     output = ''
     output += '<h1>Welcome, '
@@ -153,7 +155,7 @@ def gconnect():
     flash("you are now logged in as %s" % login_session['username'])
     return output
 
-# Helper Functions
+# Helper Functions for logging in
 
 '''
 reset the login session to disconnect the user.
@@ -164,33 +166,64 @@ return a response string
 @app.route('/gdisconnect')
 def gDisconnect():
     # get the credentials
-    credentials = login_session.get('access_token')
+    access_token = login_session.get('access_token')
     # if there are not any credentials, the user is not connected
     # send a message
-    if credentials is None:
-        response = make_response(json.dumps('Curent user not connected'), 401)
+    if access_token is None:
+        response = make_response(
+            json.dumps('Current user not connected'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-    # get the access token
-    access_token = credentials.access_token
+
     url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
     h = httplib2.Http()
     # make a request with the url
     result = h.request(url, 'GET')[0]
 
     # if the request is successfull, create the data from the login_session
-    if result['status'] == '200':
+    #if result['status'] == '200':
+    if result:
         del login_session['user_id']
-        del login_session['credentials']
+        del login_session['access_token']
         del login_session['gplus_id']
         del login_session['username']
         del login_session['email']
         del login_session['picture']
 
         # write a response for the user
-        response = make_response(json.dumps("We disconnected you."), 200)
-        response.headers['Content-Type'] = 'application/json'
+        response = redirect(url_for('showMainPage'))
+        print("We disconnected you")
         return response
+
+
+# create user function to create new user
+def createUser(login_session):
+    session = create_session()
+    user = User(name=login_session['username'],
+                picture=login_session['picture'],
+                email=login_session['email'])
+    session.add(user)
+    session.commit()
+    print("we created a new user!")
+
+    return user.id
+
+
+# get the user object
+def getUserInfo(user_id):
+    session = create_session()
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+# get the user's id
+def getUserID(user_email):
+    session = create_session()
+    try:
+        user = session.query(User).filter_by(email=user_email).one()
+        return user.id
+    except Exception:
+        return None
 
 
 # creating a JSON functionality, loops through the category data
@@ -226,7 +259,9 @@ def showMainPage():
     # if user not logged in, show the public template
     # (without deleting and editing options)
     if 'username' not in login_session:
+        state = generateState()
         return render_template('publicMain.html',
+                               STATE=state,
                                categories=categories,
                                items=items)
     return render_template('main.html',
@@ -246,7 +281,9 @@ def showItemsForCategory(category_id):
     items = session.query(Item).filter_by(category_id=category.id)
     # if user not logged in, show the public template
     if 'username' not in login_session:
+        state = generateState()
         return render_template('publicShowItemsForCategory.html',
+                               STATE=state,
                                categories=categories,
                                items=items,
                                category=category)
@@ -266,7 +303,9 @@ def showCategories():
     categories = session.query(Category).all()
     # if user not logged in, show the public template
     if 'username' not in login_session:
+        state = generateState()
         return render_template('publicCategories.html',
+                               STATE=state,
                                categories=categories)
     return render_template('categories.html',
                            categories=categories)
@@ -284,9 +323,10 @@ def showItems(category_id):
     creator = getUserInfo(category.user_id)
     # if user not logged in or the user is not owner
     # of the category, show the public template
-    if 'username' not in login_session \
-            or creator.id != login_session['user_id']:
+    if 'username' not in login_session:
+        state = generateState()
         return render_template('publicItems.html',
+                               STATE=state,
                                items=items,
                                category=category)
     return render_template('items.html',
@@ -311,7 +351,9 @@ def showOneItem(category_id, item_id):
     # show the public template
     if 'username' not in login_session \
             or creator.id != login_session['user_id']:
+        state = generateState()
         return render_template('publicOneItem.html',
+                               STATE=state,
                                item=oneItem,
                                category=category)
     return render_template('oneItem.html',
@@ -474,45 +516,6 @@ def deleteItem(category_id, item_id):
         return render_template('deleteItem.html',
                                category=category,
                                item=deletedItem)
-
-
-# create user function to create new user
-def createUser(login_session):
-    session = create_session()
-    user = User(name=login_session['username'],
-                picture=login_session['picture'],
-                email=login_session['email'])
-    session.add(user)
-    session.commit()
-    # todo: change back to id
-    users = session.query(User).all()
-    print("USERS: ", users)
-    for user in users:
-        print("USER: ", user)
-        if user.id == login_session['id']:
-            print("QUERIED USER: ", user)
-            print("QUERIED USER email: ", user.id)
-    print("email:", user.id)
-    # todo: change back to id
-    print("we created a new user!")
-    return user.id
-
-
-# get the user object
-def getUserInfo(user_id):
-    session = create_session()
-    user = session.query(User).filter_by(id=user_id).one()
-    return user
-
-
-# get the user's id
-def getUserID(user_email):
-    session = create_session()
-    try:
-        user = session.query(User).filter_by(email=user_email)
-        return user.id
-    except Exception:
-        return None
 
 
 if __name__ == '__main__':
