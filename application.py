@@ -37,11 +37,19 @@ def create_session():
 # creating a flask app
 app = Flask(__name__, template_folder='static')
 
+
+'''
+USER LOGIN
+'''
+
+
 def generateState():
     state = ''.join(
-        random.choice(string.ascii_uppercase + string.digits) for x in range(32))
+        random.choice(string.ascii_uppercase + string.digits)
+        for x in range(32))
     login_session['state'] = state
     return state
+
 
 # Login - Create anti-forgery state token
 @app.route('/login')
@@ -50,25 +58,24 @@ def showLogin():
     # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
+
 # GConnect
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
-    print("validating state token")
-    # there is no state value here
-    print("request.args.get('state')", request.args.get('state'))
-    print("login_session['state']", login_session['state'])
+    print("validating state token...")
     if request.args.get('state') != login_session['state']:
-        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response = make_response(json.dumps('Invalid state parameter!'), 401)
         response.headers['Content-Type'] = 'application/json'
-        print("invalid state parameter")
+        print("Invalid state parameter!")
         return response
-    # make the auth code compatible with python 3
+    # code for python 3:
     request.get_data()
     code = request.data.decode('utf-8')
 
     try:
         # exchange the authorization code for a credentials object
+        print('Exchange the authorization code for a credentials object...')
         oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
@@ -76,7 +83,7 @@ def gconnect():
         response = make_response(
             json.dumps('Failed to upgrade the authorization code.'), 401)
         response.headers['Content-Type'] = 'application/json'
-        print("failed to upgrade the auth code")
+        print("Failed to upgrade the auth code!")
         return response
 
     # Check the validity of the access token
@@ -89,18 +96,20 @@ def gconnect():
     str_response = response.decode('utf-8')
     result = json.loads(str_response)
 
-    # If there was an error in the access token info, abort.
+    # in case of error, abort.
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
         response.headers['Content-Type'] = 'application/json'
-        print("error in the access token info")
+        print("Error in the access token info!")
         return response
 
     # Verify that the access token is used for the intended user.
     gplus_id = credentials.id_token['sub']
+    # compare the id's
     if result['user_id'] != gplus_id:
         response = make_response(
             json.dumps("Token's user ID doesn't match given user ID."), 401)
+        # create a response
         response.headers['Content-Type'] = 'application/json'
         print("Token's user ID doesn't match given user ID.")
         return response
@@ -113,13 +122,15 @@ def gconnect():
         print("Token's client ID does not match app's.")
         return response
 
+    # store the access token
     stored_access_token = login_session.get('access_token')
+    # get the gplus id
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(
+            json.dumps('Current user is already connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
-        print("the user is already connected")
+        print("The user is already connected.")
         return response
 
     # store the access token in the session for later use
@@ -132,7 +143,6 @@ def gconnect():
     answer = requests.get(userinfo_url, params=params)
 
     data = answer.json()
-
 
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
@@ -151,17 +161,20 @@ def gconnect():
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;' \
+              'border-radius: 150px;' \
+              '-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     flash("you are now logged in as %s" % login_session['username'])
     return output
 
-# Helper Functions for logging in
 
 '''
 reset the login session to disconnect the user.
 delete all data from the login session.
 return a response string
 '''
+
+
 @app.route('/logout')
 @app.route('/gdisconnect')
 def gDisconnect():
@@ -181,7 +194,6 @@ def gDisconnect():
     result = h.request(url, 'GET')[0]
 
     # if the request is successfull, create the data from the login_session
-    #if result['status'] == '200':
     if result:
         del login_session['user_id']
         del login_session['access_token']
@@ -194,6 +206,11 @@ def gDisconnect():
         response = redirect(url_for('showMainPage'))
         print("We disconnected you")
         return response
+
+
+'''
+HELPER FUNCTIONS FOR LOGGING IN
+'''
 
 
 # create user function to create new user
@@ -211,6 +228,7 @@ def createUser(login_session):
 
 # get the user object
 def getUserInfo(user_id):
+    print("Getting the user's info...")
     session = create_session()
     user = session.query(User).filter_by(id=user_id).one()
     return user
@@ -224,6 +242,11 @@ def getUserID(user_email):
         return user.id
     except Exception:
         return None
+
+
+'''
+API ENDPOINTS
+'''
 
 
 # creating a JSON functionality, loops through the category data
@@ -248,9 +271,13 @@ def categoryItemJson(category_id):
 
 
 '''
+CRUD FUNCTIONALITIES
+
 show all the category names and items, return 
 two different html templates based on user status
 '''
+
+
 @app.route('/main')
 def showMainPage():
     session = create_session()
@@ -273,6 +300,8 @@ if the user click on one category, show the items
 for the particular category on the main page.
 return two different html templates based on user status
 '''
+
+
 @app.route('/main/<int:category_id>/items')
 def showItemsForCategory(category_id):
     session = create_session()
@@ -297,6 +326,8 @@ def showItemsForCategory(category_id):
 show all category names
 return two different html templates based on user status
 '''
+
+
 @app.route('/categories')
 def showCategories():
     session = create_session()
@@ -315,6 +346,8 @@ def showCategories():
 list all the items for a category
 return two different html templates based on user status
 '''
+
+
 @app.route('/category/<int:category_id>/items', methods=['GET'])
 def showItems(category_id):
     session = create_session()
@@ -338,14 +371,14 @@ def showItems(category_id):
 show one chosen item with editing and deleting options
 for logged-in users
 '''
+
+
 @app.route('/category/<int:category_id>/item/<int:item_id>', methods=['GET'])
 def showOneItem(category_id, item_id):
     session = create_session()
     category = session.query(Category).filter_by(id=category_id).one()
-    print("CATEGORY: ", category)
     oneItem = session.query(Item).filter_by(id=item_id,
                                             category_id=category.id).one()
-    print("ITEM: ", oneItem)
     creator = getUserInfo(category.user_id)
     # if user not logged in or the user is not owner of the category,
     # show the public template
@@ -366,6 +399,8 @@ returning a create category template for logged-in users
 if the user not logged in, render another template
 without creating options
 '''
+
+
 @app.route('/category/new', methods=['GET', 'POST'])
 def newCategory():
     # if the user is not logged in, show the login page
@@ -391,6 +426,8 @@ create new item based on category (category_id parameter required)
 if th user is not authorized, send an alert message and stop the process
 if the user is authorized, 
 '''
+
+
 @app.route('/category/<int:category_id>/item/new', methods=['GET', 'POST'])
 def newItem(category_id):
     # if the user is not logged in, redirect to the login page
@@ -408,7 +445,9 @@ def newItem(category_id):
         if request.form['name']:
             newItem = Item(name=request.form['name'],
                            category_id=category.id,
-                           user_id=login_session['user_id'])
+                           user_id=login_session['user_id'],
+                           description=request.form['description'],
+                           price=request.form['price'])
             session.add(newItem)
             session.commit()
             return redirect(url_for('showItems', category_id=category.id))
@@ -416,7 +455,13 @@ def newItem(category_id):
         return render_template('newItem.html', category=category)
 
 
-# edit category data
+'''
+edit category (category_id parameter required)
+if th user is not authorized, send an alert message and stop the process
+if the user is authorized, render an edit template
+'''
+
+
 @app.route('/category/<int:category_id>/edit', methods=['GET', 'POST'])
 def editCategory(category_id):
     if 'username' not in login_session:
@@ -438,6 +483,13 @@ def editCategory(category_id):
         return render_template('editCategory.html', category=editedCategory)
 
 
+'''
+edit item based on category (category_id parameter required)
+if th user is not authorized, send an alert message and stop the process
+if the user is authorized, render an edit template
+'''
+
+
 @app.route('/category/<int:category_id>/item/<int:item_id>/edit',
            methods=['GET', 'POST'])
 def editItem(category_id, item_id):
@@ -454,9 +506,10 @@ def editItem(category_id, item_id):
                "Create your ow category.');}' \
                '</script><body onload='myFunction()''>"
     if request.method == 'POST':
-        if request.form['name'] and request.form['description'] \
-                and request.form['price']:
+        if request.form['name'] or request.form['description'] \
+                or request.form['price']:
             editedItem.name = request.form['name']
+            editedItem.description = request.form['description']
             editedItem.price = request.form['price']
             session.add(editedItem)
             session.commit()
@@ -467,7 +520,13 @@ def editItem(category_id, item_id):
                                category=category, item=editedItem)
 
 
-# delete category
+'''
+delete category (category_id parameter required)
+if th user is not authorized, send an alert message and stop the process
+if the user is authorized, delete the category
+'''
+
+
 @app.route('/category/<int:category_id>/delete',
            methods=['GET', 'POST'])
 def deleteCategory(category_id):
@@ -494,7 +553,13 @@ def deleteCategory(category_id):
                                category=deletedCategory)
 
 
-# delete item
+'''
+delete item based on category (category_id parameter required)
+if th user is not authorized, send an alert message and stop the process
+if the user is authorized, delete the item
+'''
+
+
 @app.route('/category/<int:category_id>/item/<int:item_id>/delete',
            methods=['GET', 'POST'])
 def deleteItem(category_id, item_id):
