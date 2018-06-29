@@ -1,0 +1,75 @@
+<!-- Public template to list items -->
+
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
+  </script>
+  <script src="//apis.google.com/js/platform.js?onload=start"> </script>
+</head>
+  <body>
+    <div class="up-bar">
+      <div class="title">
+          Catalog App
+      </div>
+        <div class="login">
+          <div class="signinButton">
+          <span class="g-signin"
+            data-scope="openid email"
+            data-clientid="757805398366-29j20ver57t42ggpiso20rqmbqo5o4g9.apps.googleusercontent.com"
+            data-redirecturi="postmessage"
+            data-accesstype="offline"
+            data-cookiepolicy="single_host_origin"
+            data-callback="signInCallback"
+            data-approvalprompt="force">
+          </span>
+        </div>
+          <div id="result"></div>
+          <script>
+            function signInCallback(authResult) {
+              if (authResult['code']) {
+                // Hide the sign-in button now that the user is authorized
+                $('.signinButton').attr('style', 'display: none');
+                // Send the one-time-use code to the server, if the server responds, write a 'login successful' message to the web page and then redirect back to the main restaurants page
+                $.ajax({
+                  type: 'POST',
+                  url: '/gconnect?state={{STATE}}',
+                  processData: false,
+                  data: authResult['code'],
+                  contentType: 'application/octet-stream; charset=utf-8',
+                  success: function(result) {
+                    // Handle or verify the server response if necessary.
+                    if (result) {
+                      $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
+                     setTimeout(function() {
+                      window.location.href = "/main";
+                     }, 4000);
+
+                  } else if (authResult['error']) {
+                console.log('There was an error: ' + authResult['error']);
+              } else {
+                    $('#result').html('Failed to make a server-side call. Check your configuration and console.');
+                     }
+                  }
+              }); } }
+          </script>
+
+        </div>
+    </div>
+		<div class="container darkblue-box">
+			<h1>{{category.name}}</h1>
+			{% for item in items %}
+			<div>
+				<h4>{{item.name}}</h4>
+        <p> {{item.category_id}} </p>
+				<p>{{item.description}}</p>
+				<p> {{item.price}} </p>
+        <a href='{{url_for("showOneItem", category_id = category.id, item_id = item.id) }}'><button>Show more</button></a>
+			</div>
+			{% endfor %}
+			<a href = '{{url_for("showCategories")}}'>Back to the Categories</a>
+		</div>
+	</body>
+</html>

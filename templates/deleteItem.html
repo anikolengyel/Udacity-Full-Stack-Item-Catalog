@@ -1,0 +1,30 @@
+<!-- Template for logged-in users to delete items-->
+
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+  <body>
+    <div class="up-bar">
+      <div class="title">
+          Catalog App
+      </div>
+      <div class="logout">
+        <a href='{{url_for("gDisconnect")}}'>Log Out</a>
+      </div>
+    </div>
+    <div class="container dark-blue">
+      <h2> Delete Item</h2>
+      <h4> Are you sure you want to delete {{item.name}}?</h4>
+      <form action="{{url_for('deleteItem', category_id = category.id, item_id = item.id)}}"
+       method = 'post'>
+
+        <input class="button" type='submit', value = 'Delete'
+        <input type='submit' value='Submit'>
+        <a href = '{{url_for("showItems", category_id = category.id)}}'>Cancel</a>
+
+      </form>
+    </div>
+  </body>
+</html>
